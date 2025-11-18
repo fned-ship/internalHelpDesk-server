@@ -18,6 +18,8 @@ const userSchema = new Schema({
   role: { type: String , required: true },
   id:{type:String, required: true },
   rating: { type : Number , default:0 },
+  numOfTickets : {type : Number , default : 0} ,
+  isAccepted : {type :Boolean , default : false  },
 }, {
   timestamps: true,
 });

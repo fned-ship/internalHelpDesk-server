@@ -32,6 +32,8 @@ app.use(express.urlencoded({ extended: true })) // Parses incoming requests with
 app.use(cors())  //Allow all origins to access the API 
 app.use('/imagesProfile', express.static(path.join(__dirname, 'public/imagesProfile')));
 app.use('/chatBotFiles', express.static(path.join(__dirname, 'public/chatBotFiles')));
+app.use('/images', express.static(path.join(__dirname, 'public/images')));
+app.use('/files', express.static(path.join(__dirname, 'public/files')));
 
 
 
@@ -52,7 +54,10 @@ let activateRouter=require('./routes/activateRouter');
 let loginRouter=require('./routes/loginRouter');
 let resetRouter=require('./routes/resetRouter');
 let chatBot=require('./routes/chatBot');
+let chatRouter=require('./routes/chat')
+let adminRouter=require('./routes/adminRouter')
 
+adminRouter(app,emailUserName)
 chatBot(app,GEMINI_API_KEY,serverURL);
 signupRoute(app,clientDomainName,emailUserName);
 activateRouter(app);
@@ -64,14 +69,42 @@ const io = new Server(server, {
     cors: {
         origin: clientDomainName,
         methods: ["GET", "POST"],
-    },
+    },  
 });
+
+chatRouter(app,io);
 
 // socket connection
 io.on("connection", (socket) => {
-    console.log("User Connected");
+    console.log("User Connected : ",socket.id);
 
-    //someRouter()
+    // Join room
+    socket.on("joinChat", (chatId) => {
+        socket.join(chatId);
+        console.log("User joined chat:", chatId);
+    });
+
+    // When client sends message
+    socket.on("sendMessage", async (data) => {
+        const { chatId, sender, text } = data;
+
+        const msg = {
+            sender,
+            text,
+            imagesFiles: [],
+            otherFiles: [],
+            timestamp: new Date()
+        };
+
+        // Save in DB
+        await Chat.findOneAndUpdate(
+            { id: chatId },
+            { $push: { messages: msg } }
+        );
+
+        // Broadcast to everyone in room
+        io.to(chatId).emit("newMessage", msg);
+    });
   
     socket.on("disconnect", () => {
       console.log("User Disconnected ");
