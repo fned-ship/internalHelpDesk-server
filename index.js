@@ -56,7 +56,13 @@ let resetRouter=require('./routes/resetRouter');
 let chatBot=require('./routes/chatBot');
 let chatRouter=require('./routes/chat')
 let adminRouter=require('./routes/adminRouter')
+let ticketRouter=require('./routes/ticketRouter');
+let docsRouter=require("./routes/docsRouter")
+let updateUserProfileRoute=require("./routes/updateUserProfile")
 
+updateUserProfileRoute(app);
+docsRouter(app);
+ticketRouter(app,emailUserName)
 adminRouter(app,emailUserName)
 chatBot(app,GEMINI_API_KEY,serverURL);
 signupRoute(app,clientDomainName,emailUserName);

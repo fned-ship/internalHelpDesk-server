@@ -17,7 +17,7 @@ const TicketSchema = new mongoose.Schema({
     status: {
         type: String,
         required: true,
-        enum: ['Open', 'In Progress', 'Closed', 'Pending'] 
+        enum: [ 'In Progress', 'Closed', 'Pending'] 
     },
     priority: {
         type: String,
@@ -30,11 +30,6 @@ const TicketSchema = new mongoose.Schema({
         min: 0,
         max: 5
     },
-    dateOfStart: {
-        type: Date,
-        required: true,
-        default: Date.now 
-    },
     deadline: {
         type: Date,
         required: true
@@ -43,6 +38,10 @@ const TicketSchema = new mongoose.Schema({
         type: String,
         required: true, 
         unique: true
+    },
+    description: {
+        type: String,
+        required: true, 
     }
 });
 

@@ -1,17 +1,17 @@
 let User = require('../models/user');
-let Ticket = require("../models/ticket");
+let Ticket = require("../models/Ticket");
 const transporter = require('../mailer');
 
 
 let adminRouter=(app,emailUserName)=>{
     app.get('/getallemployees',(req,res)=>{
-        User.find({ role : "employee"  })
+        User.find({ role : "employee"  }).select('-password -SecurityCode -_id')
         .then(collection=>{
             res.status(200).json(collection)
         })
     })
     app.get('/getallmanagers',(req,res)=>{
-        User.find({ role : "manager"  })
+        User.find({ role : "manager"  }).select('-password -SecurityCode -_id')
         .then(collection=>{
             res.status(200).json(collection)
         })
@@ -32,7 +32,7 @@ let adminRouter=(app,emailUserName)=>{
                     { emp_id: userId },
                     { chef_id: userId }
                 ],
-                status: { $in: ['Open', 'In Progress'] }
+                status: { $in: ['In Progress'] }
             });
 
             if (incompleteTicketsCount > 0) {
@@ -58,7 +58,7 @@ let adminRouter=(app,emailUserName)=>{
 
     app.get('/pendingusers', async (req, res) => {
         try {
-            const pendingUsers = await User.find({ isAccepted: false }).select('-password -SecurityCode'); // Exclude sensitive fields
+            const pendingUsers = await User.find({ isAccepted: false }).select('-password -SecurityCode -_id'); // Exclude sensitive fields
 
             res.status(200).json(pendingUsers);
         } catch (error) {
@@ -75,7 +75,7 @@ let adminRouter=(app,emailUserName)=>{
             const acceptedUser = await User.findOneAndUpdate(
                 { id: userId },
                 { isAccepted: true },
-                { new: true, select: '-password -SecurityCode' }
+                { new: true, select: '-password -SecurityCode -_id' }
             );
 
             if (!acceptedUser) {
