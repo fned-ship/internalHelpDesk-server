@@ -71,6 +71,7 @@ const updateUserProfileRoute = (app) => {
       if (data.number) user.number = data.number;
       if (data.birthDay) user.birthDay = data.birthDay;
       if (data.job) user.job = data.job;
+      if (data.address) user.address = data.address;
 
 
       if (file) {

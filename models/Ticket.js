@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const Schema = mongoose.Schema;
 
 const TicketSchema = new mongoose.Schema({
     id: {
@@ -6,12 +7,14 @@ const TicketSchema = new mongoose.Schema({
         required: true,
         unique: true
     },
-    emp_id: {
-        type: String,
+    emp: {
+        type: Schema.Types.ObjectId, 
+        ref: 'person',
         required: true 
     },
-    chef_id: {
-        type: String,
+    chef: {
+        type: Schema.Types.ObjectId, 
+        ref: 'person',
         required: true 
     },
     status: {

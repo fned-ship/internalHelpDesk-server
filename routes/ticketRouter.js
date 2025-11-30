@@ -7,7 +7,8 @@ const Chat = require("../models/chat");
 let ticketRouter=(app,emailUserName)=>{
     app.get('/getalltickets', async (req, res) => {
         try {
-            const tickets = await Ticket.find();
+            const tickets = await Ticket.find().populate('chef', 'firstName lastName number email id _id').populate('emp', 'firstName lastName number email id _id');
+
             return res.status(200).json({ body: tickets });
         } catch (err) {
             return res.status(500).json({ message: "Server error", error: err });
@@ -54,10 +55,10 @@ let ticketRouter=(app,emailUserName)=>{
 
     app.post('/createticket', async (req, res) => {
         try {
-            const {emp_id, chef_id, status, priority, deadline, chatID, description } = req.body;
+            const {emp , emp_id, chef , chef_id, status, priority, deadline, description } = req.body;
 
 
-            if (!emp_id || !chef_id || !status || !priority || !deadline || !description) {
+            if (!emp || !chef || !status || !priority || !deadline || !description) {
                 return res.status(400).json({ message: "All fields are required" });
             }
 
@@ -67,8 +68,8 @@ let ticketRouter=(app,emailUserName)=>{
 
             const newTicket = new Ticket({
                 id,
-                emp_id,
-                chef_id,
+                emp,
+                chef,
                 status,
                 priority,
                 rating: 0,
@@ -77,15 +78,18 @@ let ticketRouter=(app,emailUserName)=>{
                 description
             });
 
-            await newTicket.save();
+            await newTicket.save().then(tick => {
+                tick.populate('emp', 'firstName lastName number email id _id');
+                tick.populate('chef', 'firstName lastName number email id _id');
+            });
 
 
             try {
-                const emp = await User.findOne({ id: emp_id });
-                if (emp && emp.email) {
+                const employee=newTicket.emp ;
+                if (employee && employee.email) {
                     await transporter.sendMail({
                         from: emailUserName,
-                        to: emp.email,
+                        to: employee.email,
                         subject: `New Ticket Assigned - ${priority} Priority`,
                         html: `
                             <h2>New Ticket Assigned</h2>
@@ -170,10 +174,16 @@ let ticketRouter=(app,emailUserName)=>{
 
 
             if (closeTicket) {
-                await ticket.Finish(rating);
+                await ticket.Finish(rating).then(tick => {
+                    tick.populate('emp', 'firstName lastName number email id _id');
+                    tick.populate('chef', 'firstName lastName number email id _id');
+                });
             } else {
                 ticket.rating = rating;
-                await ticket.save();
+                await ticket.save().then(tick => {
+                    tick.populate('emp', 'firstName lastName number email id _id');
+                    tick.populate('chef', 'firstName lastName number email id _id');
+                });
             }
 
             return res.status(200).json({ 
@@ -195,7 +205,7 @@ let ticketRouter=(app,emailUserName)=>{
 
         try {
 
-        const user = await User.findOne({ id: userId });
+        const user = await User.findById(userId);
         
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
@@ -205,13 +215,14 @@ let ticketRouter=(app,emailUserName)=>{
 
 
         if (user.role === 'manager' || user.role === 'chef') {
-            tickets = await Ticket.find({ chef_id: userId }).sort({ createdAt: -1 });
+            tickets = await Ticket.find({ chef: userId }).populate('emp', 'firstName lastName number email id _id')
+            .populate('chef', 'firstName lastName number email id _id').sort({ createdAt: -1 });
         } else {
 
-            tickets = await Ticket.find({ emp_id: userId }).sort({ createdAt: -1 });
+            tickets = await Ticket.find({ emp: userId }).populate('chef', 'firstName lastName number email id _id').populate('emp', 'firstName lastName number email id _id').sort({ createdAt: -1 });
         }
 
-        return res.status(200).json(tickets);
+        return res.status(200).json({data:tickets});
         } catch (error) {
         return res.status(500).json({ message: 'Server Error', error: error.message });
         }
@@ -221,13 +232,13 @@ let ticketRouter=(app,emailUserName)=>{
         const { ticketId } = req.params;
 
         try {
-        const ticket = await Ticket.findOne({ id: ticketId });
+        const ticket = await Ticket.findOne({ id: ticketId }).populate('chef', 'firstName lastName number email id _id').populate('emp', 'firstName lastName number email id _id');
 
         if (!ticket) {
             return res.status(404).json({ message: 'Ticket not found' });
         }
 
-        return res.status(200).json(ticket);
+        return res.status(200).json({data:ticket});
         } catch (error) {
         return res.status(500).json({ message: 'Server Error', error: error.message });
         }
@@ -238,7 +249,7 @@ let ticketRouter=(app,emailUserName)=>{
 
         try {
 
-        const user = await User.findOne({ id: userId });
+        const user = await User.findById(userId);
         
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
@@ -246,23 +257,26 @@ let ticketRouter=(app,emailUserName)=>{
 
         let lastTicket;
 
-
         if (user.role === 'manager' || user.role === 'chef') {
-            lastTicket = await Ticket.findOne({ chef_id: userId })
+            lastTicket = await Ticket.find({ chef: userId })
+            .populate('chef', 'firstName lastName number email id _id').populate('emp', 'firstName lastName number email id _id')
             .sort({ createdAt: -1 })
             .limit(1);
         } else {
 
-            lastTicket = await Ticket.findOne({ emp_id: userId })
+            lastTicket = await Ticket.find({ emp: userId })
+            .populate('chef', 'firstName lastName number email id _id')
+            .populate('emp', 'firstName lastName number email id _id')
             .sort({ createdAt: -1 })
             .limit(1);
         }
+
 
         if (!lastTicket) {
             return res.status(404).json({ message: 'No tickets found' });
         }
 
-        return res.status(200).json(lastTicket);
+        return res.status(200).json({data :lastTicket});
         } catch (error) {
         return res.status(500).json({ message: 'Server Error', error: error.message });
         }
